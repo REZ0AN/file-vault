@@ -7,23 +7,25 @@ globalThis.__BUILD_MANIFEST = {
     "static/chunks/0cz1d0mv5g_q7.js"
   ],
   "lowPriorityFiles": [
-    "static/Swepmu-WMVfDo_HUUkQQ7/_buildManifest.js",
-    "static/Swepmu-WMVfDo_HUUkQQ7/_ssgManifest.js",
-    "static/Swepmu-WMVfDo_HUUkQQ7/_clientMiddlewareManifest.js"
+    "static/4G_YhR3Fm4vHPrYC3izGr/_buildManifest.js",
+    "static/4G_YhR3Fm4vHPrYC3izGr/_ssgManifest.js",
+    "static/4G_YhR3Fm4vHPrYC3izGr/_clientMiddlewareManifest.js"
   ],
   "rootMainFiles": [
-    "static/chunks/3cfn99dbrcvvp.js",
-    "static/chunks/1j_b1xq_woyiy.js",
+    "static/chunks/1x6obpmlu1_c2.js",
+    "static/chunks/06bs-nf19b2js.js",
     "static/chunks/1vo0wohvofgd7.js",
+    "static/chunks/3l_qmp-61z4yc.js",
     "static/chunks/turbopack-3-ry682tkyiqk.js"
   ],
   "rootMainFilesTree": {},
   "pagesChunkGroupBootstrapParams": {
     "/page": {
       "otherChunks": [
-        "static/chunks/3cfn99dbrcvvp.js",
-        "static/chunks/1j_b1xq_woyiy.js",
-        "static/chunks/1vo0wohvofgd7.js"
+        "static/chunks/1x6obpmlu1_c2.js",
+        "static/chunks/06bs-nf19b2js.js",
+        "static/chunks/1vo0wohvofgd7.js",
+        "static/chunks/3l_qmp-61z4yc.js"
       ],
       "runtimeModuleIds": [
         94553
@@ -31,9 +33,10 @@ globalThis.__BUILD_MANIFEST = {
     },
     "/_not-found/page": {
       "otherChunks": [
-        "static/chunks/3cfn99dbrcvvp.js",
-        "static/chunks/1j_b1xq_woyiy.js",
-        "static/chunks/1vo0wohvofgd7.js"
+        "static/chunks/1x6obpmlu1_c2.js",
+        "static/chunks/06bs-nf19b2js.js",
+        "static/chunks/1vo0wohvofgd7.js",
+        "static/chunks/3l_qmp-61z4yc.js"
       ],
       "runtimeModuleIds": [
         94553
@@ -41,9 +44,21 @@ globalThis.__BUILD_MANIFEST = {
     },
     "/_global-error/page": {
       "otherChunks": [
-        "static/chunks/3cfn99dbrcvvp.js",
-        "static/chunks/1j_b1xq_woyiy.js",
-        "static/chunks/1vo0wohvofgd7.js"
+        "static/chunks/1x6obpmlu1_c2.js",
+        "static/chunks/06bs-nf19b2js.js",
+        "static/chunks/1vo0wohvofgd7.js",
+        "static/chunks/3l_qmp-61z4yc.js"
+      ],
+      "runtimeModuleIds": [
+        94553
+      ]
+    },
+    "/register/page": {
+      "otherChunks": [
+        "static/chunks/1x6obpmlu1_c2.js",
+        "static/chunks/06bs-nf19b2js.js",
+        "static/chunks/1vo0wohvofgd7.js",
+        "static/chunks/3l_qmp-61z4yc.js"
       ],
       "runtimeModuleIds": [
         94553
