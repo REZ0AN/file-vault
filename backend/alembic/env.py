@@ -2,27 +2,28 @@
 from logging.config import fileConfig
 
 from alembic import context
-from sqlalchemy import pool
 
 from app.database import Base, engine
-from app.models.user import User  # Register model metadata
+from app.models.user import User  # noqa: F401
+from app.models.file import File  # noqa: F401
 
 
 # Alembic configuration
 config = context.config
 
-# Initialize logging from alembic.ini
+# Load logging configuration from alembic.ini
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
 
-# Metadata describing our SQLAlchemy models
+# Both User and File are registered here
 target_metadata = Base.metadata
 
 
 def run_migrations_offline() -> None:
     """
-    Generate SQL without connecting to the database.
+    Generate migration SQL without connecting
+    to the database.
     """
     context.configure(
         url=engine.url,
@@ -38,7 +39,7 @@ def run_migrations_offline() -> None:
 
 def run_migrations_online() -> None:
     """
-    Run migrations against the actual PostgreSQL database.
+    Execute migrations against PostgreSQL.
     """
     with engine.connect() as connection:
         context.configure(
