@@ -3,11 +3,17 @@
 
 import { useRef, useState } from "react";
 import type { FormEvent } from "react";
+
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
-import { api, ApiError } from "@/lib/api";
-import type { User } from "@/lib/api";
+import { useAuth } from "@/context/AuthContext";
+import { ApiError } from "@/lib/api";
 
+
+// -----------------------------------------------
+// Types
+// -----------------------------------------------
 
 type LoginForm = {
   email: string;
@@ -25,7 +31,13 @@ const initialForm: LoginForm = {
 };
 
 
-function validateLogin(values: LoginForm): LoginErrors {
+// -----------------------------------------------
+// Form validation
+// -----------------------------------------------
+
+function validateLogin(
+  values: LoginForm
+): LoginErrors {
   const errors: LoginErrors = {};
 
   const email = values.email.trim();
@@ -42,30 +54,46 @@ function validateLogin(values: LoginForm): LoginErrors {
     errors.password = "Password is required.";
   } else if (
     values.password.length > 128 ||
-    new TextEncoder().encode(values.password).length > 256
+    new TextEncoder().encode(
+      values.password
+    ).length > 256
   ) {
-    errors.password = "Password exceeds the allowed length.";
+    errors.password =
+      "Password exceeds the allowed length.";
   }
 
   return errors;
 }
 
 
+// -----------------------------------------------
+// Login page
+// -----------------------------------------------
+
 export default function LoginPage() {
+  const router = useRouter();
+
+  const {
+    login,
+    isLoading,
+    isAuthenticated,
+  } = useAuth();
+
   const [values, setValues] = useState<LoginForm>(
     initialForm
   );
 
-  const [errors, setErrors] = useState<LoginErrors>({});
+  const [errors, setErrors] = useState<LoginErrors>(
+    {}
+  );
+
   const [serverError, setServerError] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
 
-  const [authenticatedUser, setAuthenticatedUser] =
-    useState<User | null>(null);
+  const [showPassword, setShowPassword] =
+    useState(false);
 
-  // Prevent duplicate requests even before React re-renders.
-  const submissionInProgress = useRef(false);
+  const submittingRef = useRef(false);
+
 
   function updateField(
     field: keyof LoginForm,
@@ -84,46 +112,51 @@ export default function LoginPage() {
     setServerError("");
   }
 
+
   async function handleSubmit(
     event: FormEvent<HTMLFormElement>
   ) {
     event.preventDefault();
 
-    if (submissionInProgress.current) {
+    if (
+      submittingRef.current ||
+      isLoading ||
+      isAuthenticated
+    ) {
       return;
     }
 
-    const validationErrors = validateLogin(values);
+    const validationErrors =
+      validateLogin(values);
 
     setErrors(validationErrors);
     setServerError("");
 
-    if (Object.keys(validationErrors).length > 0) {
+    if (
+      Object.keys(validationErrors).length > 0
+    ) {
       return;
     }
 
-    submissionInProgress.current = true;
-    setIsSubmitting(true);
+    submittingRef.current = true;
 
     try {
-      // 1. Authenticate credentials with FastAPI.
-      const result = await api.login({
+      // AuthContext handles:
+      // 1. POST /auth/login
+      // 2. GET /auth/me
+      // 3. Memory-only JWT storage
+      // 4. Token expiration
+      await login({
         email: values.email.trim().toLowerCase(),
         password: values.password,
       });
 
-      // 2. Use the JWT immediately to verify
-      //    the authenticated user.
-      const user = await api.getMe(
-        result.access_token
-      );
-
-      // 3. Keep only safe user information in
-      //    React state. Do not retain the JWT.
-      setAuthenticatedUser(user);
-
-      // 4. Clear password after successful login.
+      // Clear the form after successful login.
       setValues(initialForm);
+
+      // Navigate without a full browser reload.
+      // We will change this to /dashboard later.
+      router.replace("/");
 
     } catch (error) {
       if (error instanceof ApiError) {
@@ -138,76 +171,31 @@ export default function LoginPage() {
         } else {
           setServerError(error.message);
         }
+      } else if (
+        error instanceof Error &&
+        error.message ===
+          "A login request is already in progress."
+      ) {
+        setServerError(
+          "A login request is already in progress."
+        );
       } else {
         setServerError(
-          "Unable to connect to the server. Please try again."
+          "Unable to complete login. Please try again."
         );
       }
     } finally {
-      submissionInProgress.current = false;
-      setIsSubmitting(false);
+      submittingRef.current = false;
     }
   }
 
-  if (authenticatedUser) {
-    return (
-      <main className="flex min-h-screen items-center justify-center bg-slate-50 px-4 py-12 text-slate-900">
-        <section className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
-          <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-full bg-green-100 text-2xl text-green-700">
-            ✓
-          </div>
-
-          <h1 className="text-2xl font-bold">
-            Login successful
-          </h1>
-
-          <p className="mt-3 text-sm text-slate-600">
-            FastAPI has authenticated your credentials
-            and verified your access token.
-          </p>
-
-          <div className="mt-6 rounded-xl bg-slate-50 p-4">
-            <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
-              Authenticated user
-            </p>
-
-            <p className="mt-2 break-all font-medium">
-              {authenticatedUser.email}
-            </p>
-
-            <p className="mt-1 break-all text-xs text-slate-500">
-              User ID: {authenticatedUser.id}
-            </p>
-          </div>
-
-          <p className="mt-5 text-sm leading-6 text-slate-600">
-            This is a temporary authentication
-            verification screen. We have not saved
-            your JWT or created a persistent session.
-            Refreshing this page will return you to
-            the login form.
-          </p>
-
-          <button
-            type="button"
-            onClick={() => {
-              setAuthenticatedUser(null);
-              setValues(initialForm);
-              setServerError("");
-              setErrors({});
-            }}
-            className="mt-6 w-full rounded-lg bg-slate-900 px-4 py-3 text-sm font-semibold text-white hover:bg-slate-800"
-          >
-            Return to login
-          </button>
-        </section>
-      </main>
-    );
-  }
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-slate-50 px-4 py-12 text-slate-900">
       <div className="w-full max-w-md">
+
+        {/* Header */}
+
         <div className="mb-8 text-center">
           <Link
             href="/"
@@ -225,11 +213,17 @@ export default function LoginPage() {
           </p>
         </div>
 
+
+        {/* Login form */}
+
         <form
           onSubmit={handleSubmit}
           noValidate
           className="space-y-5 rounded-2xl border border-slate-200 bg-white p-7 shadow-sm"
         >
+
+          {/* Email */}
+
           <div>
             <label
               htmlFor="email"
@@ -240,18 +234,23 @@ export default function LoginPage() {
 
             <input
               id="email"
-              type="email"
               name="email"
+              type="email"
               autoComplete="email"
               placeholder="you@example.com"
               value={values.email}
               onChange={(event) =>
-                updateField("email", event.target.value)
+                updateField(
+                  "email",
+                  event.target.value
+                )
               }
-              disabled={isSubmitting}
+              disabled={isLoading}
               aria-invalid={Boolean(errors.email)}
               aria-describedby={
-                errors.email ? "email-error" : undefined
+                errors.email
+                  ? "email-error"
+                  : undefined
               }
               className="w-full rounded-lg border border-slate-300 px-3 py-3 text-sm outline-none focus:border-slate-900 focus:ring-2 focus:ring-slate-200 disabled:opacity-60"
             />
@@ -267,6 +266,9 @@ export default function LoginPage() {
             )}
           </div>
 
+
+          {/* Password */}
+
           <div>
             <label
               htmlFor="password"
@@ -278,8 +280,12 @@ export default function LoginPage() {
             <div className="relative">
               <input
                 id="password"
-                type={showPassword ? "text" : "password"}
                 name="password"
+                type={
+                  showPassword
+                    ? "text"
+                    : "password"
+                }
                 autoComplete="current-password"
                 placeholder="Enter your password"
                 value={values.password}
@@ -289,8 +295,10 @@ export default function LoginPage() {
                     event.target.value
                   )
                 }
-                disabled={isSubmitting}
-                aria-invalid={Boolean(errors.password)}
+                disabled={isLoading}
+                aria-invalid={Boolean(
+                  errors.password
+                )}
                 aria-describedby={
                   errors.password
                     ? "password-error"
@@ -302,9 +310,11 @@ export default function LoginPage() {
               <button
                 type="button"
                 onClick={() =>
-                  setShowPassword((previous) => !previous)
+                  setShowPassword(
+                    (previous) => !previous
+                  )
                 }
-                disabled={isSubmitting}
+                disabled={isLoading}
                 aria-label={
                   showPassword
                     ? "Hide password"
@@ -327,6 +337,9 @@ export default function LoginPage() {
             )}
           </div>
 
+
+          {/* API error */}
+
           {serverError && (
             <div
               role="alert"
@@ -337,18 +350,26 @@ export default function LoginPage() {
             </div>
           )}
 
+
+          {/* Submit */}
+
           <button
             type="submit"
-            disabled={isSubmitting}
+            disabled={
+              isLoading ||
+              isAuthenticated
+            }
             className="w-full rounded-lg bg-slate-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {isSubmitting
+            {isLoading
               ? "Signing in..."
-              : "Sign in"}
+              : isAuthenticated
+                ? "Signed in"
+                : "Sign in"}
           </button>
 
           <p className="text-center text-sm text-slate-600">
-            Don&apost have an account?{" "}
+            Don&naps; have an account?{" "}
             <Link
               href="/register"
               className="font-semibold text-slate-900 underline underline-offset-4"
@@ -356,6 +377,7 @@ export default function LoginPage() {
               Create account
             </Link>
           </p>
+
         </form>
       </div>
     </main>
