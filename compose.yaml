@@ -1,0 +1,22 @@
+services:
+  postgres:
+    image: postgres:17
+    container_name: file-vault-postgres
+    restart: unless-stopped
+
+    environment:
+      POSTGRES_USER: filevault
+      POSTGRES_PASSWORD: filevault_dev_password
+      POSTGRES_DB: filevault_db
+
+    ports:
+      - "127.0.0.1:5432:5432"
+
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U filevault -d filevault_db
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
