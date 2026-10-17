@@ -11,10 +11,6 @@ import { useAuth } from "@/context/AuthContext";
 import { ApiError } from "@/lib/api";
 
 
-// -----------------------------------------------
-// Types
-// -----------------------------------------------
-
 type LoginForm = {
   email: string;
   password: string;
@@ -31,15 +27,8 @@ const initialForm: LoginForm = {
 };
 
 
-// -----------------------------------------------
-// Form validation
-// -----------------------------------------------
-
-function validateLogin(
-  values: LoginForm
-): LoginErrors {
+function validateLogin(values: LoginForm): LoginErrors {
   const errors: LoginErrors = {};
-
   const email = values.email.trim();
 
   if (!email) {
@@ -54,9 +43,7 @@ function validateLogin(
     errors.password = "Password is required.";
   } else if (
     values.password.length > 128 ||
-    new TextEncoder().encode(
-      values.password
-    ).length > 256
+    new TextEncoder().encode(values.password).length > 256
   ) {
     errors.password =
       "Password exceeds the allowed length.";
@@ -65,10 +52,6 @@ function validateLogin(
   return errors;
 }
 
-
-// -----------------------------------------------
-// Login page
-// -----------------------------------------------
 
 export default function LoginPage() {
   const router = useRouter();
@@ -79,18 +62,14 @@ export default function LoginPage() {
     isAuthenticated,
   } = useAuth();
 
-  const [values, setValues] = useState<LoginForm>(
-    initialForm
-  );
+  const [values, setValues] =
+    useState<LoginForm>(initialForm);
 
-  const [errors, setErrors] = useState<LoginErrors>(
-    {}
-  );
+  const [errors, setErrors] =
+    useState<LoginErrors>({});
 
   const [serverError, setServerError] = useState("");
-
-  const [showPassword, setShowPassword] =
-    useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const submittingRef = useRef(false);
 
@@ -126,15 +105,12 @@ export default function LoginPage() {
       return;
     }
 
-    const validationErrors =
-      validateLogin(values);
+    const validationErrors = validateLogin(values);
 
     setErrors(validationErrors);
     setServerError("");
 
-    if (
-      Object.keys(validationErrors).length > 0
-    ) {
+    if (Object.keys(validationErrors).length > 0) {
       return;
     }
 
@@ -142,21 +118,21 @@ export default function LoginPage() {
 
     try {
       // AuthContext handles:
-      // 1. POST /auth/login
-      // 2. GET /auth/me
-      // 3. Memory-only JWT storage
-      // 4. Token expiration
+      // 1. Verify email and password through FastAPI.
+      // 2. Receive JWT.
+      // 3. Call /auth/me to retrieve the user.
+      // 4. Store the session in React memory.
+      // 5. Manage token expiration.
       await login({
         email: values.email.trim().toLowerCase(),
         password: values.password,
       });
 
-      // Clear the form after successful login.
+      // Clear sensitive form input after login.
       setValues(initialForm);
 
-      // Navigate without a full browser reload.
-      // We will change this to /dashboard later.
-      router.replace("/");
+      // Client-side navigation preserves AuthProvider.
+      router.replace("/dashboard");
 
     } catch (error) {
       if (error instanceof ApiError) {
@@ -194,8 +170,6 @@ export default function LoginPage() {
     <main className="flex min-h-screen items-center justify-center bg-slate-50 px-4 py-12 text-slate-900">
       <div className="w-full max-w-md">
 
-        {/* Header */}
-
         <div className="mb-8 text-center">
           <Link
             href="/"
@@ -212,9 +186,6 @@ export default function LoginPage() {
             Sign in to your File Vault account.
           </p>
         </div>
-
-
-        {/* Login form */}
 
         <form
           onSubmit={handleSubmit}
@@ -240,17 +211,12 @@ export default function LoginPage() {
               placeholder="you@example.com"
               value={values.email}
               onChange={(event) =>
-                updateField(
-                  "email",
-                  event.target.value
-                )
+                updateField("email", event.target.value)
               }
               disabled={isLoading}
               aria-invalid={Boolean(errors.email)}
               aria-describedby={
-                errors.email
-                  ? "email-error"
-                  : undefined
+                errors.email ? "email-error" : undefined
               }
               className="w-full rounded-lg border border-slate-300 px-3 py-3 text-sm outline-none focus:border-slate-900 focus:ring-2 focus:ring-slate-200 disabled:opacity-60"
             />
@@ -265,7 +231,6 @@ export default function LoginPage() {
               </p>
             )}
           </div>
-
 
           {/* Password */}
 
@@ -282,9 +247,7 @@ export default function LoginPage() {
                 id="password"
                 name="password"
                 type={
-                  showPassword
-                    ? "text"
-                    : "password"
+                  showPassword ? "text" : "password"
                 }
                 autoComplete="current-password"
                 placeholder="Enter your password"
@@ -296,9 +259,7 @@ export default function LoginPage() {
                   )
                 }
                 disabled={isLoading}
-                aria-invalid={Boolean(
-                  errors.password
-                )}
+                aria-invalid={Boolean(errors.password)}
                 aria-describedby={
                   errors.password
                     ? "password-error"
@@ -337,7 +298,6 @@ export default function LoginPage() {
             )}
           </div>
 
-
           {/* API error */}
 
           {serverError && (
@@ -350,15 +310,11 @@ export default function LoginPage() {
             </div>
           )}
 
-
           {/* Submit */}
 
           <button
             type="submit"
-            disabled={
-              isLoading ||
-              isAuthenticated
-            }
+            disabled={isLoading || isAuthenticated}
             className="w-full rounded-lg bg-slate-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {isLoading
@@ -369,7 +325,7 @@ export default function LoginPage() {
           </button>
 
           <p className="text-center text-sm text-slate-600">
-            Don&naps; have an account?{" "}
+            Don&apos;t have an account?{" "}
             <Link
               href="/register"
               className="font-semibold text-slate-900 underline underline-offset-4"
