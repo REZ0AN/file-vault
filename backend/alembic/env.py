@@ -6,8 +6,7 @@ from alembic import context
 from app.database import Base, engine
 from app.models.user import User  # noqa: F401
 from app.models.file import File  # noqa: F401
-
-
+from app.models.google_connection import GoogleConnection #noqa: F401
 # Alembic configuration
 config = context.config
 
@@ -19,6 +18,21 @@ if config.config_file_name is not None:
 # Both User and File are registered here
 target_metadata = Base.metadata
 
+# Verify that all required models are registered.
+required_tables = {
+    "users",
+    "google_connections",
+}
+
+missing_tables = required_tables - set(
+    target_metadata.tables
+)
+
+if missing_tables:
+    raise RuntimeError(
+        "Alembic metadata is missing tables: "
+        + ", ".join(sorted(missing_tables))
+    )
 
 def run_migrations_offline() -> None:
     """
