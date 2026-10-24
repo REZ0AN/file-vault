@@ -1,63 +1,32 @@
+"""File Vault API: local identity, central storage, and personal Google actions."""
 
+import os
+from pathlib import Path
+
+from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.routes.auth import router as auth_router
-from app.routes.files import router as files_router
+from app.auth import router as auth_router
+from app.files import router as files_router
+from app.google import router as google_router
 
+load_dotenv(Path(__file__).resolve().parents[1] / ".env")
+frontend_origin = os.getenv("FRONTEND_ORIGIN", "http://localhost:3000").rstrip("/")
 
-app = FastAPI(
-    title="File Vault API",
-    description="Secure file storage with Google integration",
-    version="1.0.0",
-)
-
-
-# Allow requests from our Next.js development frontend.
-ALLOWED_ORIGINS = [
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-]
-
-
+app = FastAPI(title="File Vault API")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=ALLOWED_ORIGINS,
-    allow_credentials=False,
+    allow_origins=[frontend_origin],
+    allow_credentials=True,
     allow_methods=["GET", "POST"],
-    allow_headers=[
-        "Authorization",
-        "Content-Type",
-    ],
+    allow_headers=["Content-Type"],
 )
+app.include_router(auth_router, prefix="/api/v1/auth")
+app.include_router(files_router, prefix="/api/v1/files")
+app.include_router(google_router, prefix="/api/v1/google")
 
 
-# Authentication routes:
-# /api/v1/auth/register
-# /api/v1/auth/login
-# /api/v1/auth/me
-app.include_router(
-    auth_router,
-    prefix="/api/v1",
-)
-
-
-# File routes:
-# POST /api/v1/files
-# GET  /api/v1/files
-# GET  /api/v1/files/{file_id}/download
-app.include_router(
-    files_router,
-    prefix="/api/v1",
-)
-
-
-@app.get(
-    "/health",
-    tags=["Health"],
-)
-async def health_check():
-    return {
-        "status": "healthy",
-        "service": "file-vault-api",
-    }
+@app.get("/health")
+def health() -> dict[str, str]:
+    return {"status": "ok"}

@@ -1,4 +1,22 @@
 services:
+  preview-converter:
+    image: gotenberg/gotenberg:8.38.1
+    restart: unless-stopped
+    networks:
+      - preview
+    ports:
+      - "127.0.0.1:3001:3000"
+    mem_limit: 1g
+    cpus: 1.0
+    command:
+      - gotenberg
+      - --chromium-disable-routes=true
+      - --api-body-limit=6MB
+      - --libreoffice-auto-start=true
+      - --libreoffice-deny-private-ips=true
+      - --libreoffice-deny-public-ips=true
+      - --libreoffice-max-queue-size=4
+      - --api-timeout=30s
   postgres:
     image: postgres:17
     container_name: file-vault-postgres
@@ -20,3 +38,5 @@ services:
       timeout: 5s
       retries: 5
       start_period: 10s
+networks:
+  preview:
