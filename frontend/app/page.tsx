@@ -1,124 +1,64 @@
+"use client";
 
-import { Suspense } from "react";
-import { connection } from "next/server";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { api } from "@/lib/api";
+import { ToastViewport, useToast } from "./Toast";
 
-type HealthResponse = {
-  status: string;
-  service: string;
-};
+export default function Home() {
+  const router = useRouter();
+  const [mode, setMode] = useState<"login" | "register">("login");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [busy, setBusy] = useState(false);
+  const { toast, showToast, dismissToast } = useToast();
 
-async function checkBackend(): Promise<{
-  connected: boolean;
-  data: HealthResponse | null;
-}> {
-  // Mark this health check as request-time work.
-  // Keep it outside try/catch.
-  await connection();
+  useEffect(() => {
+    const error = new URLSearchParams(window.location.search).get("error");
+    api.me().then(() => { router.replace("/dashboard"); })
+      .catch(() => { if (error) showToast(error, "error"); });
+  }, [router, showToast]);
 
-  try {
-    const response = await fetch(
-      "http://127.0.0.1:8000/health",
-      {
-        cache: "no-store",
-        signal: AbortSignal.timeout(5000),
-      }
-    );
-
-    if (!response.ok) {
-      return {
-        connected: false,
-        data: null,
-      };
+  async function submit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setBusy(true);
+    try {
+      if (mode === "login") await api.login(email, password);
+      else await api.register(email, password);
+      router.replace("/dashboard");
+    } catch (error) {
+      showToast((error as Error).message, "error");
+      setBusy(false);
     }
-
-    const data: HealthResponse = await response.json();
-
-    return {
-      connected: true,
-      data,
-    };
-  } catch {
-    return {
-      connected: false,
-      data: null,
-    };
   }
-}
 
-// Async component handles dynamic backend data.
-async function BackendStatus() {
-  const backend = await checkBackend();
+  return <main className="shell auth-shell">
+    <header className="auth-intro">
+      <p className="eyebrow">FILE VAULT <span aria-hidden="true">/</span> PRIVATE WORKSPACE</p>
+      <h1>YOUR FILES.<br /><span className="accent-text">YOUR RULES.</span></h1>
+      <p>Keep your files together. Preview, download, or send a copy to your Google account when you need it.</p>
+      <div className="hero-stamp" aria-hidden="true">PRIVATE BY DEFAULT <span>↗</span></div>
+    </header>
 
-  return (
-    <div className="rounded-xl border p-6">
-      <h2 className="text-lg font-semibold">
-        Backend Connection
-      </h2>
-
-      <p className="mt-3">
-        Status:{" "}
-        <span
-          className={
-            backend.connected
-              ? "font-semibold text-green-600"
-              : "font-semibold text-red-600"
-          }
-        >
-          {backend.connected
-            ? "Connected"
-            : "Disconnected"}
-        </span>
-      </p>
-
-      {backend.data && (
-        <div className="mt-4 space-y-1 text-sm">
-          <p>
-            Service: {backend.data.service}
-          </p>
-          <p>
-            Health: {backend.data.status}
-          </p>
-        </div>
-      )}
-    </div>
-  );
-}
-
-// Synchronous page component provides a static shell.
-export default function HomePage() {
-  return (
-    <main className="mx-auto min-h-screen max-w-3xl p-8">
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold">
-            File Vault
-          </h1>
-
-          <p className="mt-2 text-gray-500">
-            Next.js + FastAPI + PostgreSQL
-          </p>
-        </div>
-
-        <Suspense
-          fallback={
-            <div className="rounded-xl border p-6">
-              <h2 className="text-lg font-semibold">
-                Backend Connection
-              </h2>
-              <p className="mt-3 text-gray-500">
-                Checking backend connection...
-              </p>
-            </div>
-          }
-        >
-          <BackendStatus />
-        </Suspense>
-
-        <p className="text-sm text-gray-500">
-          Authentication and file management
-          will be added in the next steps.
-        </p>
-      </div>
-    </main>
-  );
+    <section className="card auth-card">
+      <div className="step">01 / ACCESS</div>
+      <h2>{mode === "login" ? "Sign in" : "Create an account"}</h2>
+      <form className="stack" onSubmit={submit}>
+        <label htmlFor="email">Email</label>
+        <input id="email" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+        <label htmlFor="password">Password</label>
+        <input id="password" type="password" minLength={8} maxLength={128}
+          autoComplete={mode === "login" ? "current-password" : "new-password"}
+          value={password} onChange={(e) => setPassword(e.target.value)} required />
+        <button disabled={busy}>{busy ? "Working…" : mode === "login" ? "Sign in" : "Create account"}</button>
+      </form>
+      <button className="text-button" type="button" onClick={() => setMode(mode === "login" ? "register" : "login")}>
+        {mode === "login" ? "Need an account? Register" : "Already have an account? Sign in"}
+      </button>
+      <div className="divider">or</div>
+      <a className="button" href={api.googleConnectUrl}>Continue with Google</a>
+      <p className="hint">If you already have a password account, sign in first and link Google from your dashboard.</p>
+    </section>
+    <ToastViewport toast={toast} onDismiss={dismissToast} />
+  </main>;
 }
